@@ -287,8 +287,9 @@ function makeCard(m,filtSet,up,dn){
   const isDn=dn&&dn.has(m.id)&&m.id!==state.selectedId;
   const card=document.createElement('div');
   card.className='mod-card'+(isSel?' selected':'')+(!inF&&!isSel?' dimmed':'')+(isUp?' dep-up':'')+(isDn?' dep-down':'');
-  const pct=Math.min(100,(roiScore(m)/MAX_ROI)*100);
-  card.innerHTML=`<div class="mod-name">${m.name}</div><div class="roi-track"><div class="roi-fill" style="width:${pct}%"></div></div>`;
+  const pct=(m[state.colorBy]/5)*100;
+  const dim=DIMS.find(d=>d.id===state.colorBy);
+  card.innerHTML=`<div class="mod-name">${m.name}</div><div class="roi-track"><div class="roi-fill" style="width:${pct}%;background:${dim?.color||'var(--cyan)'}"></div></div>`;
   card.onclick=()=>selectModule(m.id);
   return card;
 }
