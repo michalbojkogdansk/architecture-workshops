@@ -443,7 +443,6 @@ document.querySelectorAll('.preset-btn').forEach(btn=>{
     buildSidebar();renderCurrentView();
   };
 });
-});
 document.querySelectorAll('.tab-btn').forEach(btn=>{
   btn.onclick=()=>{document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');state.view=btn.dataset.view;document.querySelectorAll('[id^="view-"]').forEach(v=>v.style.display='none');document.getElementById('view-'+state.view).style.display='block';renderCurrentView();};
 });
