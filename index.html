@@ -175,11 +175,13 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
         <div class="layer-chips" id="layer-chips"></div>
       </div>
       <div class="sb-section">
-        <div style="font-size:10px;color:var(--text2);line-height:1.8;">
-          <span style="color:var(--cyan)">─</span> Bar length = ROI<br>
-          <span style="color:var(--amber)">─</span> Amber border = upstream dep<br>
-          <span style="color:var(--green)">─</span> Green border = downstream dep
-        </div>
+        <div style="font-size:10px;color:var(--text2);line-height:1.9;">
+        <span style="color:var(--cyan)">─</span> Bar = selected dimension score<br>
+        <span style="color:var(--amber)">✦</span> High ROI score (≥ 2.0 / 5)<br>
+        <span style="color:var(--purple)">★</span> High AI Win score (≥ 2.0 / 5)<br>
+        <span style="color:var(--amber)">─</span> Amber border = upstream dep<br>
+        <span style="color:var(--green)">─</span> Green border = downstream dep
+      </div>
       </div>
     </div>
   </div>
@@ -289,9 +291,14 @@ function makeCard(m,filtSet,up,dn){
   const isDn=dn&&dn.has(m.id)&&m.id!==state.selectedId;
   const card=document.createElement('div');
   card.className='mod-card'+(isSel?' selected':'')+(!inF&&!isSel?' dimmed':'')+(isUp?' dep-up':'')+(isDn?' dep-down':'');
+  const roiN = Math.min(5, roiScore(m)/5);
+  const aiN  = Math.min(5, aiWinScore(m)/5);
+  const roiStar = roiN >= 2.0 ? `<span style="color:var(--amber);font-size:9px;line-height:1;" title="High ROI">✦</span>` : '';
+  const aiStar  = aiN  >= 2.0 ? `<span style="color:var(--purple);font-size:9px;line-height:1;" title="High AI Win">★</span>` : '';
+  const stars = (roiStar || aiStar) ? `<span style="display:inline-flex;gap:3px;margin-left:5px;vertical-align:middle;">${roiStar}${aiStar}</span>` : '';
   const pct=(m[state.colorBy]/5)*100;
   const dim=DIMS.find(d=>d.id===state.colorBy);
-  card.innerHTML=`<div class="mod-name">${m.name}</div><div class="roi-track"><div class="roi-fill" style="width:${pct}%;background:${dim?.color||'var(--cyan)'}"></div></div>`;
+  card.innerHTML=`<div class="mod-name">${m.name}${stars}</div><div class="roi-track"><div class="roi-fill" style="width:${pct}%;background:${dim?.color||'var(--cyan)'}"></div></div>`;
   card.onclick=()=>selectModule(m.id);
   return card;
 }
@@ -427,6 +434,10 @@ function selectModule(id){
     <div class="dp-roi-row">
       <div class="roi-card"><div class="roi-val">${roiNorm(m)}</div><div class="roi-label">ROI score</div></div>
       <div class="roi-card"><div class="roi-val" style="color:var(--purple)">${aiWinNorm(m)}</div><div class="roi-label">AI win score</div></div>
+    </div>
+    <div style="font-size:10px;color:var(--text2);line-height:1.7;margin-bottom:14px;font-family:var(--sans);">
+      <span style="color:var(--amber)">✦ ROI</span> = (revenue × incrementality) ÷ complexity — how much value for how much effort, scaled 0–5.<br>
+      <span style="color:var(--purple)">★ AI Win</span> = (AI SDLC × incrementality) ÷ complexity — how much AI tooling accelerates delivery here, scaled 0–5.
     </div>
     <div class="dp-sec-title">Scores</div>
     ${DIMS.map(d=>`<div class="score-row"><span class="score-name">${d.label}</span><div class="score-track"><div class="score-fill" style="width:${m[d.id]*20}%;background:${d.color}"></div></div><span class="score-num">${m[d.id]}</span></div>`).join('')}
