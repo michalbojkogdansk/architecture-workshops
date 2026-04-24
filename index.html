@@ -441,6 +441,10 @@ function selectModule(id){
   const logical=LOGICAL_GROUPS.find(g=>g.layers.includes(m.layer));
   const upMods=m.depends_on.map(getModById).filter(Boolean);
   const dnMods=MODULES_DATA.modules.filter(x=>x.depends_on.includes(m.id));
+  const roiN = Math.min(5, roiScore(m)/5);
+  const aiN  = Math.min(5, aiWinScore(m)/5);
+  const isTraining = m.ai_sdlc >= 4 && m.incrementality >= 4 && m.regulation <= 3 && m.customer_impact <= 3;
+  const isStart    = roiN >= 2.0 && aiN >= 2.0 && isTraining;
   inner.innerHTML=`
     <div class="dp-layer-tag" style="color:${layer.color}">${layer.label}</div>
     <div class="dp-name">${m.name}</div>
