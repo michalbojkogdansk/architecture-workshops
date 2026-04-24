@@ -211,8 +211,8 @@ let state = {
   view:'arch', colorBy:'incrementality',
   filters:{ revenue_impact:{min:1,max:5},ai_sdlc:{min:1,max:5},mod_complexity:{min:1,max:5},incrementality:{min:1,max:5},regulation:{min:1,max:5},customer_impact:{min:1,max:5} },
   activeLayers: new Set(MODULES_DATA.layers.map(l=>l.id)),
-  hiddenGroups: new Set(),
-  selectedId:null, sidebarOpen:true, detailOpen:true,
+  hiddenGroups: new Set(LOGICAL_GROUPS.map(g=>g.id)),
+  selectedId:null, sidebarOpen:false, detailOpen:false,
 };
 
 const getModById   = id => MODULES_DATA.modules.find(m=>m.id===id);
@@ -494,6 +494,9 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 function renderCurrentView(){if(state.view==='arch')renderArch();else if(state.view==='dep')renderDep();else renderMatrix();}
 
 buildSidebar();
+// Apply initial closed states
+document.getElementById('sidebar-wrap').className='sidebar-wrap closed';
+document.getElementById('sb-toggle').textContent='›';
 renderArch();
 </script>
 </body>
