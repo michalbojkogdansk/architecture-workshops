@@ -192,25 +192,26 @@ const LOGICAL_GROUPS = [
   { id:'data',     label:'Data',            color:'#10b981', layers:['data','emerging'] },
 ];
 const DIMS = [
-  { id:'revenue_impact',  label:'Revenue impact',        color:'#22d3ee' },
+  { id:'incrementality', label:'Incrementality',         color:'#4ade80' },
   { id:'ai_sdlc',        label:'AI SDLC applicability',  color:'#a78bfa' },
   { id:'mod_complexity', label:'Mod complexity',         color:'#f87171' },
-  { id:'incrementality', label:'Incrementality',         color:'#4ade80' },
   { id:'regulation',     label:'Regulation level',       color:'#f59e0b' },
   { id:'customer_impact',label:'Customer impact',        color:'#f472b6' },
+  { id:'revenue_impact', label:'Revenue impact',         color:'#22d3ee' },
 ];
 const PRESETS = {
-  roi:      { revenue_impact:4,ai_sdlc:1,mod_complexity:1,incrementality:4,regulation:1,customer_impact:1 },
-  aiwin:    { revenue_impact:1,ai_sdlc:4,mod_complexity:1,incrementality:4,regulation:1,customer_impact:1 },
-  lowrisk:  { revenue_impact:1,ai_sdlc:1,mod_complexity:1,incrementality:1,regulation:1,customer_impact:1 },
-  regulated:{ revenue_impact:1,ai_sdlc:1,mod_complexity:1,incrementality:1,regulation:4,customer_impact:1 },
+  roi:      { revenue_impact:{min:4,max:5},ai_sdlc:{min:1,max:5},mod_complexity:{min:1,max:5},incrementality:{min:4,max:5},regulation:{min:1,max:5},customer_impact:{min:1,max:5} },
+  aiwin:    { revenue_impact:{min:1,max:5},ai_sdlc:{min:4,max:5},mod_complexity:{min:1,max:5},incrementality:{min:4,max:5},regulation:{min:1,max:5},customer_impact:{min:1,max:5} },
+  lowrisk:  { revenue_impact:{min:1,max:5},ai_sdlc:{min:1,max:5},mod_complexity:{min:1,max:5},incrementality:{min:1,max:5},regulation:{min:1,max:5},customer_impact:{min:1,max:5} },
+  regulated:{ revenue_impact:{min:1,max:5},ai_sdlc:{min:1,max:5},mod_complexity:{min:1,max:5},incrementality:{min:1,max:5},regulation:{min:4,max:5},customer_impact:{min:1,max:5} },
 };
 const MAX_ROI = 25;
 
 let state = {
-  view:'arch', colorBy:'revenue_impact',
-  filters:{ revenue_impact:1,ai_sdlc:1,mod_complexity:1,incrementality:1,regulation:1,customer_impact:1 },
+  view:'arch', colorBy:'incrementality',
+  filters:{ revenue_impact:{min:1,max:5},ai_sdlc:{min:1,max:5},mod_complexity:{min:1,max:5},incrementality:{min:1,max:5},regulation:{min:1,max:5},customer_impact:{min:1,max:5} },
   activeLayers: new Set(MODULES_DATA.layers.map(l=>l.id)),
+  hiddenGroups: new Set(),
   selectedId:null, sidebarOpen:true, detailOpen:true,
 };
 
@@ -226,7 +227,12 @@ const scoreColor   = v  => ['','#f87171','#fb923c','#f59e0b','#4ade80','#22d3ee'
 function filteredModules() {
   return MODULES_DATA.modules.filter(m => {
     if (!state.activeLayers.has(m.layer)) return false;
-    return DIMS.every(d => m[d.id] >= state.filters[d.id]);
+    const grp = LOGICAL_GROUPS.find(g => g.layers.includes(m.layer));
+    if (grp && state.hiddenGroups.has(grp.id)) return false;
+    return DIMS.every(d => {
+      const f = state.filters[d.id];
+      return m[d.id] >= f.min && m[d.id] <= f.max;
+    });
   });
 }
 function getDepChain(id,seen=new Set()){if(seen.has(id))return seen;seen.add(id);getModById(id)?.depends_on.forEach(d=>getDepChain(d,seen));return seen;}
@@ -251,8 +257,31 @@ function buildSidebar() {
   const df=document.getElementById('dim-filters');
   df.innerHTML='';
   DIMS.forEach(d=>{
-    const v=state.filters[d.id];
-    df.innerHTML+=`<div class="dim-row"><div class="dim-label"><span class="dim-name">${d.label}</span><span class="dim-val" id="fv-${d.id}">${v}+</span></div><input type="range" min="1" max="5" value="${v}" oninput="state.filters['${d.id}']=+this.value;document.getElementById('fv-${d.id}').textContent=this.value+'+';renderCurrentView();"></div>`;
+    const f=state.filters[d.id];
+    df.innerHTML+=`<div class="dim-row">
+      <div class="dim-label">
+        <span class="dim-name">${d.label}</span>
+        <span class="dim-val" id="fv-${d.id}" style="color:${d.color}">${f.min} – ${f.max}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:5px;margin-bottom:1px;">
+        <span style="font-size:9px;color:var(--text2);width:22px;flex-shrink:0">min</span>
+        <input type="range" min="1" max="5" step="1" value="${f.min}" style="flex:1" oninput="
+          var v=+this.value;
+          if(v>state.filters['${d.id}'].max)v=state.filters['${d.id}'].max;
+          state.filters['${d.id}'].min=v;this.value=v;
+          document.getElementById('fv-${d.id}').textContent=v+' – '+state.filters['${d.id}'].max;
+          renderCurrentView();">
+      </div>
+      <div style="display:flex;align-items:center;gap:5px;">
+        <span style="font-size:9px;color:var(--text2);width:22px;flex-shrink:0">max</span>
+        <input type="range" min="1" max="5" step="1" value="${f.max}" style="flex:1" oninput="
+          var v=+this.value;
+          if(v<state.filters['${d.id}'].min)v=state.filters['${d.id}'].min;
+          state.filters['${d.id}'].max=v;this.value=v;
+          document.getElementById('fv-${d.id}').textContent=state.filters['${d.id}'].min+' – '+v;
+          renderCurrentView();">
+      </div>
+    </div>`;
   });
   const ls=document.getElementById('layer-section');
   
@@ -290,6 +319,11 @@ function makeCard(m,filtSet,up,dn){
   return card;
 }
 
+function toggleGroup(id){
+  state.hiddenGroups.has(id)?state.hiddenGroups.delete(id):state.hiddenGroups.add(id);
+  renderArch();
+}
+
 function renderArch(){
   const c=document.getElementById('view-arch');
   c.innerHTML='';
@@ -297,12 +331,20 @@ function renderArch(){
   const up=state.selectedId?getDepChain(state.selectedId):null;
   const dn=state.selectedId?getDownstream(state.selectedId):null;
   LOGICAL_GROUPS.forEach(g=>{
-    const mods=MODULES_DATA.modules.filter(m=>g.layers.includes(m.layer));
+    const allMods=MODULES_DATA.modules.filter(m=>g.layers.includes(m.layer));
+    const hidden=state.hiddenGroups.has(g.id);
     const sec=document.createElement('div');sec.className='logical-group';
-    sec.innerHTML=`<div class="logical-group-hdr"><span class="logical-group-name" style="color:${g.color}">${g.label}</span><span class="logical-group-count">${mods.length} modules</span></div>`;
-    const wrap=document.createElement('div');wrap.className='arch-modules';
-    mods.forEach(m=>wrap.appendChild(makeCard(m,filt,up,dn)));
-    sec.appendChild(wrap);c.appendChild(sec);
+    sec.innerHTML=`<div class="logical-group-hdr">
+      <span class="logical-group-name" style="color:${g.color}">${g.label}</span>
+      <span class="logical-group-count">${allMods.length} modules</span>
+      <button onclick="toggleGroup('${g.id}')" style="margin-left:auto;background:none;border:1px solid var(--border2);color:var(--text2);font-family:var(--font);font-size:9px;padding:2px 8px;border-radius:3px;cursor:pointer;letter-spacing:.05em;text-transform:uppercase;">${hidden?'▶ Show':'▼ Hide'}</button>
+    </div>`;
+    if(!hidden){
+      const wrap=document.createElement('div');wrap.className='arch-modules';
+      allMods.forEach(m=>wrap.appendChild(makeCard(m,filt,up,dn)));
+      sec.appendChild(wrap);
+    }
+    c.appendChild(sec);
   });
 }
 
@@ -422,13 +464,7 @@ function selectModule(id){
     <div class="dp-sec-title">Modernisation approach</div><div class="dp-text">${m.mod_approach}</div>
     <div class="dp-sec-title">AI SDLC assessment</div><div class="dp-text" style="color:${m.ai_sdlc>=4?'var(--cyan)':m.ai_sdlc<=2?'var(--text2)':'var(--text1)'}">${m.ai_sdlc_reasoning}</div>
     ${upMods.length?`<div class="dp-sec-title">Depends on</div><div class="dep-list">${upMods.map(d=>`<div class="dep-item" onclick="selectModule('${d.id}')"><span class="di-dot" style="background:${getLayerColor(d.layer)}"></span>${d.name}<span class="di-dir">↑</span></div>`).join('')}</div>`:''}
-    ${dnMods.length?`<div class="dp-sec-title">Consumed by</div><div class="dep-list">${dnMods.map(d=>`<div class="dep-item" onclick="selectModule('${d.id}')"><span class="di-dot" style="background:${getLayerColor(d.layer)}"></span>${d.name}<span class="di-dir">↓</span></div>`).join('')}</div>`:''}
-    <div class="dp-actions">
-      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;">Explore with AI</div>
-      <button class="dp-btn" onclick="sendToChat('modernisation','${m.id}')">Modernisation deep dive ↗</button>
-      <button class="dp-btn" onclick="sendToChat('dependencies','${m.id}')">Map dependencies ↗</button>
-      <button class="dp-btn" onclick="sendToChat('aiplan','${m.id}')">AI SDLC plan ↗</button>
-    </div>`;
+    ${dnMods.length?`<div class="dp-sec-title">Consumed by</div><div class="dep-list">${dnMods.map(d=>`<div class="dep-item" onclick="selectModule('${d.id}')"><span class="di-dot" style="background:${getLayerColor(d.layer)}"></span>${d.name}<span class="di-dir">↓</span></div>`).join('')}</div>`:''}\`;
 }
 
 function sendToChat(type,id){
