@@ -457,17 +457,18 @@ function selectModule(id){
     </div>
     <div class="dp-sec-title">Scores</div>
     ${DIMS.map(d=>`<div class="score-row"><span class="score-name">${d.label}</span><div class="score-track"><div class="score-fill" style="width:${m[d.id]*20}%;background:${d.color}"></div></div><span class="score-num">${m[d.id]}</span></div>`).join('')}
-    <div class="dp-sec-title">Technical</div>
-    <div class="dp-text">${m.tech}</div>
-    ${(isStart||isTraining||roiN>=2.0||aiN>=2.0)?`<div class="dp-sec-title" style="margin-top:14px;">Why these indicators</div><div class="dp-text">${[
-      isStart?'<span style="color:#4ade80;font-weight:500;">▶ Start here</span> — highest combined ROI and AI Win in the portfolio with low regulatory and customer risk. The natural entry point for the modernisation programme.':'',
-      isTraining&&!isStart?'<span style="color:#2dd4bf;font-weight:500;">⊙ Training ground</span> — high AI SDLC fit with low regulation and low customer exposure. Safe to build AI SDLC skills without risk to production operations.':'',
-      isStart?'<span style="color:#2dd4bf;font-weight:500;">⊙ Training ground</span> — also qualifies: safe, highly incremental, well suited to AI tooling experimentation.':'',
-      roiN>=2.0?`<span style="color:var(--amber);font-weight:500;">✦ High ROI</span> — score ${roiN}/5 from revenue impact ${m.revenue_impact}/5 × incrementality ${m.incrementality}/5 ÷ complexity ${m.mod_complexity}/5.`:'',
+    <div class="dp-sec-title">Purpose</div>
+    <div class="dp-text">${m.desc}</div>
+    ${(isStart||isTraining)?`
+    <div class="dp-sec-title" style="margin-top:14px;">Why modernise this</div>
+    <div class="dp-text">${m.mod_approach}</div>
+    <div class="dp-sec-title" style="margin-top:14px;">Indicators</div>
+    <div class="dp-text">${[
+      isStart?'<span style="color:#4ade80;font-weight:500;">▶ Start here</span> — highest combined ROI and AI Win. Low regulation, low customer risk. Best entry point for the programme.':'',
+      isStart||isTraining?'<span style="color:#2dd4bf;font-weight:500;">⊙ Training ground</span> — high AI SDLC applicability, highly incremental, safe to experiment without production risk.':'',
+      roiN>=2.0?`<span style="color:var(--amber);font-weight:500;">✦ High ROI</span> — ${roiN}/5 (revenue ${m.revenue_impact} × incrementality ${m.incrementality} ÷ complexity ${m.mod_complexity})`:'',
       aiN>=2.0?`<span style="color:var(--purple);font-weight:500;">★ High AI Win</span> — ${m.ai_sdlc_reasoning}`:'',
-    ].filter(Boolean).join('<br><br>')}</div>`:''}
-    ${upMods.length?`<div class="dp-sec-title">Depends on</div><div class="dep-list">${upMods.map(d=>`<div class="dep-item" onclick="selectModule('${d.id}')"><span class="di-dot" style="background:${getLayerColor(d.layer)}"></span>${d.name}<span class="di-dir">↑</span></div>`).join('')}</div>`:''}
-    ${dnMods.length?`<div class="dp-sec-title">Consumed by</div><div class="dep-list">${dnMods.map(d=>`<div class="dep-item" onclick="selectModule('${d.id}')"><span class="di-dot" style="background:${getLayerColor(d.layer)}"></span>${d.name}<span class="di-dir">↓</span></div>`).join('')}</div>`:''}`;
+    ].filter(Boolean).join('<br><br>')}</div>`:''}`;
 }
 
 function sendToChat(type,id){
