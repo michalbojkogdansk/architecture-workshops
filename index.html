@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lido Architecture · Modernisation Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="data/modules.js"></script>
+<style>
+:root {
+  --bg0: #060d1a;
+  --bg1: #0d1829;
+  --bg2: #131f33;
+  --bg3: #1a2840;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.14);
+  --text0: #e8edf5;
+  --text1: #9aa8bf;
+  --text2: #5a6a85;
+  --cyan: #22d3ee;
+  --amber: #f59e0b;
+  --red: #f87171;
+  --green: #4ade80;
+  --purple: #a78bfa;
+  --pink: #f472b6;
+  --font: 'IBM Plex Mono', 'Courier New', monospace;
+  --sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --sidebar: 240px;
+  --detail: 340px;
+}
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500&display=swap');
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg0);color:var(--text0);font-family:var(--font);font-size:13px;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── TOP BAR ─────────────────────────────────────── */
+header{height:48px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0;flex-shrink:0;background:var(--bg1);}
+.hd-brand{padding:0 20px;font-size:11px;letter-spacing:.1em;color:var(--cyan);text-transform:uppercase;font-weight:600;border-right:1px solid var(--border);height:100%;display:flex;align-items:center;gap:8px;white-space:nowrap;}
+.hd-brand span{color:var(--text2);}
+.hd-tabs{display:flex;height:100%;}
+.tab-btn{height:100%;padding:0 18px;background:none;border:none;border-right:1px solid var(--border);color:var(--text1);font-family:var(--font);font-size:11px;letter-spacing:.06em;cursor:pointer;transition:.15s;text-transform:uppercase;}
+.tab-btn:hover{color:var(--text0);background:var(--bg2);}
+.tab-btn.active{color:var(--cyan);border-bottom:2px solid var(--cyan);}
+.hd-right{margin-left:auto;padding:0 16px;display:flex;align-items:center;gap:10px;}
+.preset-label{font-size:10px;color:var(--text2);letter-spacing:.06em;text-transform:uppercase;}
+.preset-btn{padding:4px 10px;border:1px solid var(--border2);background:none;color:var(--text1);font-family:var(--font);font-size:10px;border-radius:3px;cursor:pointer;letter-spacing:.04em;transition:.15s;}
+.preset-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.preset-btn.active{border-color:var(--amber);color:var(--amber);background:rgba(245,158,11,.08);}
+
+/* ── LAYOUT ──────────────────────────────────────── */
+.layout{display:flex;flex:1;overflow:hidden;}
+.sidebar{width:var(--sidebar);border-right:1px solid var(--border);overflow-y:auto;background:var(--bg1);flex-shrink:0;}
+.main{flex:1;overflow:hidden;position:relative;}
+.detail-panel{width:0;border-left:1px solid var(--border);overflow-y:auto;background:var(--bg1);flex-shrink:0;transition:width .2s;overflow:hidden;}
+.detail-panel.open{width:var(--detail);}
+
+/* ── SIDEBAR ─────────────────────────────────────── */
+.sb-section{padding:14px 16px;border-bottom:1px solid var(--border);}
+.sb-title{font-size:9px;letter-spacing:.12em;color:var(--text2);text-transform:uppercase;margin-bottom:10px;font-weight:600;}
+.dim-row{margin-bottom:12px;}
+.dim-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.dim-name{font-size:11px;color:var(--text1);}
+.dim-val{font-size:11px;color:var(--cyan);min-width:16px;text-align:right;}
+input[type=range]{width:100%;-webkit-appearance:none;height:2px;background:var(--border2);border-radius:2px;outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--cyan);cursor:pointer;}
+.color-by{display:flex;flex-direction:column;gap:4px;}
+.color-opt{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:3px;cursor:pointer;font-size:11px;color:var(--text1);border:1px solid transparent;transition:.15s;}
+.color-opt:hover{background:var(--bg2);}
+.color-opt.active{border-color:var(--border2);color:var(--text0);background:var(--bg2);}
+.color-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.legend{margin-top:10px;}
+.legend-row{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--text2);margin-bottom:4px;}
+.legend-bar{height:6px;border-radius:2px;flex:1;}
+
+/* ── LAYER FILTER ────────────────────────────────── */
+.layer-chips{display:flex;flex-direction:column;gap:3px;}
+.layer-chip{display:flex;align-items:center;gap:7px;padding:5px 8px;border-radius:3px;cursor:pointer;font-size:11px;color:var(--text1);border:1px solid transparent;transition:.15s;text-transform:uppercase;letter-spacing:.05em;}
+.layer-chip:hover{background:var(--bg2);}
+.layer-chip.active{color:var(--text0);background:var(--bg2);border-color:var(--border);}
+.layer-chip .ldot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+
+/* ── ARCHITECTURE VIEW ───────────────────────────── */
+#view-arch{height:100%;overflow:auto;padding:24px 32px;}
+.arch-section{margin-bottom:6px;}
+.arch-layer-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.arch-layer-dot{width:7px;height:7px;border-radius:50%;}
+.arch-layer-name{font-size:9px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;}
+.arch-modules{display:flex;flex-wrap:wrap;gap:6px;padding-left:2px;}
+.mod-card{padding:8px 11px;border:1px solid var(--border);border-radius:4px;cursor:pointer;transition:.15s;position:relative;min-width:120px;background:var(--bg1);}
+.mod-card:hover{border-color:var(--border2);background:var(--bg2);}
+.mod-card.selected{border-color:var(--cyan) !important;}
+.mod-card.dimmed{opacity:.22;pointer-events:none;}
+.mod-card.dep-highlight{border-color:var(--amber) !important;box-shadow:0 0 0 1px rgba(245,158,11,.2);}
+.mod-card.dep-in{border-color:var(--green) !important;box-shadow:0 0 0 1px rgba(74,222,128,.15);}
+.mod-name{font-size:11px;font-weight:500;color:var(--text0);margin-bottom:5px;white-space:nowrap;}
+.mod-score-bar{height:3px;border-radius:2px;margin-bottom:3px;}
+.mod-badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;}
+.badge{font-size:8px;padding:1px 5px;border-radius:2px;letter-spacing:.04em;font-weight:600;}
+.badge-mod{background:rgba(245,158,11,.15);color:var(--amber);}
+.badge-effort{background:rgba(255,255,255,.06);color:var(--text2);}
+.sep-arrow{text-align:center;font-size:10px;color:var(--text2);margin:2px 0;letter-spacing:.1em;}
+
+/* ── DEPENDENCY GRAPH ────────────────────────────── */
+#view-dep{height:100%;position:relative;}
+#dep-svg{width:100%;height:100%;}
+.dep-node{cursor:pointer;}
+.dep-node circle{transition:.15s;}
+.dep-node text{font-family:var(--font);font-size:10px;fill:var(--text1);pointer-events:none;}
+.dep-link{fill:none;stroke:rgba(255,255,255,.12);stroke-width:1px;}
+.dep-link.highlight-out{stroke:var(--amber);stroke-width:2px;opacity:1;}
+.dep-link.highlight-in{stroke:var(--green);stroke-width:2px;opacity:1;}
+.dep-instructions{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-size:10px;color:var(--text2);letter-spacing:.06em;text-transform:uppercase;pointer-events:none;}
+
+/* ── MATRIX VIEW ─────────────────────────────────── */
+#view-matrix{height:100%;overflow:hidden;}
+#matrix-svg{width:100%;height:100%;}
+.matrix-axis text{font-family:var(--font);font-size:10px;fill:var(--text2);}
+.matrix-bubble{cursor:pointer;transition:.1s;}
+.matrix-label{font-family:var(--font);font-size:9px;fill:var(--text1);pointer-events:none;}
+.quadrant-label{font-family:var(--font);font-size:9px;fill:var(--text2);letter-spacing:.06em;text-transform:uppercase;}
+
+/* ── DETAIL PANEL ────────────────────────────────── */
+.dp-inner{padding:18px 16px;min-width:var(--detail);}
+.dp-close{float:right;background:none;border:none;color:var(--text2);cursor:pointer;font-size:14px;padding:0;line-height:1;font-family:var(--font);}
+.dp-close:hover{color:var(--text0);}
+.dp-layer{font-size:9px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:6px;}
+.dp-name{font-size:16px;font-weight:500;color:var(--text0);margin-bottom:4px;line-height:1.3;font-family:var(--sans);}
+.dp-desc{font-size:11px;color:var(--text1);line-height:1.7;margin-bottom:16px;font-family:var(--sans);}
+.dp-section{margin-bottom:16px;}
+.dp-sec-title{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--text2);margin-bottom:8px;font-weight:600;}
+.dp-text{font-size:11px;color:var(--text1);line-height:1.7;font-family:var(--sans);}
+.score-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.score-name{font-size:10px;color:var(--text2);width:120px;flex-shrink:0;letter-spacing:.04em;}
+.score-track{flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden;}
+.score-fill{height:100%;border-radius:2px;transition:.3s;}
+.score-num{font-size:10px;color:var(--text1);min-width:14px;text-align:right;}
+.dep-list{display:flex;flex-direction:column;gap:4px;}
+.dep-item{font-size:10px;padding:5px 8px;border-radius:3px;border:1px solid var(--border);display:flex;align-items:center;gap:6px;cursor:pointer;transition:.15s;font-family:var(--font);}
+.dep-item:hover{border-color:var(--border2);background:var(--bg2);}
+.dep-item .di-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.dep-item .di-dir{font-size:9px;color:var(--text2);margin-left:auto;}
+.dp-roi{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.roi-card{background:var(--bg2);border-radius:4px;padding:10px 12px;}
+.roi-val{font-size:20px;font-weight:600;color:var(--cyan);}
+.roi-label{font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-top:2px;}
+.dp-actions{display:flex;flex-direction:column;gap:6px;margin-top:16px;}
+.dp-btn{padding:8px 12px;border:1px solid var(--border2);background:none;color:var(--text1);font-family:var(--font);font-size:10px;border-radius:3px;cursor:pointer;text-align:left;transition:.15s;letter-spacing:.04em;}
+.dp-btn:hover{border-color:var(--cyan);color:var(--cyan);}
+.tag-mod{display:inline-block;font-size:9px;padding:2px 7px;border-radius:2px;background:rgba(245,158,11,.12);color:var(--amber);letter-spacing:.06em;font-weight:600;margin-bottom:10px;}
+.effort-pill{display:inline-block;font-size:9px;padding:2px 7px;border-radius:2px;letter-spacing:.06em;font-weight:600;margin-left:6px;}
+.effort-S{background:rgba(74,222,128,.12);color:var(--green);}
+.effort-M{background:rgba(34,211,238,.12);color:var(--cyan);}
+.effort-L{background:rgba(167,139,250,.12);color:var(--purple);}
+.effort-XL{background:rgba(248,113,113,.12);color:var(--red);}
+.ai-score-high{color:var(--cyan);}
+.ai-score-low{color:var(--text2);}
+
+/* ── SCORE COLORS ────────────────────────────────── */
+.s1{background:#f87171}
+.s2{background:#fb923c}
+.s3{background:#f59e0b}
+.s4{background:#4ade80}
+.s5{background:#22d3ee}
+
+/* ── SCROLLBAR ───────────────────────────────────── */
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hd-brand">⬡ <span>Lido</span> Architecture Intelligence</div>
+  <div class="hd-tabs">
+    <button class="tab-btn active" data-view="arch">Architecture</button>
+    <button class="tab-btn" data-view="dep">Dependencies</button>
+    <button class="tab-btn" data-view="matrix">Priority matrix</button>
+  </div>
+  <div class="hd-right">
+    <span class="preset-label">Quick filters</span>
+    <button class="preset-btn" data-preset="roi">Highest ROI</button>
+    <button class="preset-btn" data-preset="aiwin">AI SDLC quick wins</button>
+    <button class="preset-btn" data-preset="lowrisk">Low customer risk</button>
+    <button class="preset-btn" data-preset="regulated">High regulation</button>
+    <button class="preset-btn" data-preset="">Clear</button>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-section">
+      <div class="sb-title">Colour by dimension</div>
+      <div class="color-by" id="color-by"></div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-title">Min score filters</div>
+      <div id="dim-filters"></div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-title">Layer visibility</div>
+      <div class="layer-chips" id="layer-chips"></div>
+    </div>
+    <div class="sb-section">
+      <div class="sb-title">Legend</div>
+      <div class="legend">
+        <div class="legend-row"><span class="legend-bar s1"></span>1 – very low</div>
+        <div class="legend-row"><span class="legend-bar s2"></span>2 – low</div>
+        <div class="legend-row"><span class="legend-bar s3"></span>3 – medium</div>
+        <div class="legend-row"><span class="legend-bar s4"></span>4 – high</div>
+        <div class="legend-row"><span class="legend-bar s5"></span>5 – very high</div>
+      </div>
+    </div>
+    <div class="sb-section" style="font-size:9px;color:var(--text2);line-height:1.7;letter-spacing:.04em;">
+      ROI = (revenue × increment) / complexity<br>
+      AI win = (AI SDLC × increment) / complexity
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+    <div id="view-arch" style="display:block"></div>
+    <div id="view-dep" style="display:none"></div>
+    <div id="view-matrix" style="display:none"></div>
+  </main>
+
+  <!-- DETAIL PANEL -->
+  <div class="detail-panel" id="detail-panel">
+    <div class="dp-inner" id="detail-inner"></div>
+  </div>
+</div>
+
+<script>
+// ────────────────────────────────────────────────────
+// STATE
+// ────────────────────────────────────────────────────
+const DIMS = [
+  { id: 'revenue_impact',    label: 'Revenue impact',      color: '#22d3ee' },
+  { id: 'ai_sdlc',          label: 'AI SDLC applicability',color: '#a78bfa' },
+  { id: 'mod_complexity',   label: 'Mod complexity',       color: '#f87171' },
+  { id: 'incrementality',   label: 'Incrementality',       color: '#4ade80' },
+  { id: 'regulation',       label: 'Regulation level',     color: '#f59e0b' },
+  { id: 'customer_impact',  label: 'Customer impact',      color: '#f472b6' },
+];
+
+let state = {
+  view: 'arch',
+  colorBy: 'revenue_impact',
+  filters: { revenue_impact: 1, ai_sdlc: 1, mod_complexity: 1, incrementality: 1, regulation: 1, customer_impact: 1 },
+  activeLayers: new Set(MODULES_DATA.layers.map(l => l.id)),
+  selectedId: null,
+  preset: null,
+};
+
+// ────────────────────────────────────────────────────
+// HELPERS
+// ────────────────────────────────────────────────────
+function getModById(id){ return MODULES_DATA.modules.find(m => m.id === id); }
+function getLayerById(id){ return MODULES_DATA.layers.find(l => l.id === id); }
+function getLayerColor(id){ return getLayerById(id)?.color || '#6b7280'; }
+function scoreColor(v){ return ['','#f87171','#fb923c','#f59e0b','#4ade80','#22d3ee'][v] || '#6b7280'; }
+function roiScore(m){ return ((m.revenue_impact * m.incrementality) / m.mod_complexity).toFixed(1); }
+function aiWinScore(m){ return ((m.ai_sdlc * m.incrementality) / m.mod_complexity).toFixed(1); }
+
+function filteredModules(){
+  return MODULES_DATA.modules.filter(m => {
+    if(!state.activeLayers.has(m.layer)) return false;
+    for(const [k,v] of Object.entries(state.filters)){
+      if(m[k] < v) return false;
+    }
+    return true;
+  });
+}
+
+function getDepChain(id, seen = new Set()) {
+  if(seen.has(id)) return;
+  seen.add(id);
+  const m = getModById(id);
+  m?.depends_on.forEach(d => getDepChain(d, seen));
+  return seen;
+}
+
+function getDownstream(id, seen = new Set()) {
+  if(seen.has(id)) return;
+  seen.add(id);
+  MODULES_DATA.modules.forEach(m => {
+    if(m.depends_on.includes(id)) getDownstream(m.id, seen);
+  });
+  return seen;
+}
+
+// ────────────────────────────────────────────────────
+// SIDEBAR CONTROLS
+// ────────────────────────────────────────────────────
+function buildSidebar(){
+  // Color by
+  const cb = document.getElementById('color-by');
+  cb.innerHTML = '';
+  DIMS.forEach(d => {
+    const el = document.createElement('div');
+    el.className = 'color-opt' + (state.colorBy === d.id ? ' active' : '');
+    el.innerHTML = `<span class="color-dot" style="background:${d.color}"></span>${d.label}`;
+    el.onclick = () => { state.colorBy = d.id; buildSidebar(); renderCurrentView(); };
+    cb.appendChild(el);
+  });
+
+  // Dim filters
+  const df = document.getElementById('dim-filters');
+  df.innerHTML = '';
+  DIMS.forEach(d => {
+    const v = state.filters[d.id] || 1;
+    df.innerHTML += `<div class="dim-row">
+      <div class="dim-label">
+        <span class="dim-name">${d.label}</span>
+        <span class="dim-val" id="fv-${d.id}">${v}+</span>
+      </div>
+      <input type="range" min="1" max="5" value="${v}" oninput="
+        state.filters['${d.id}']=+this.value;
+        document.getElementById('fv-${d.id}').textContent=this.value+'+';
+        renderCurrentView();
+      ">
+    </div>`;
+  });
+
+  // Layer chips
+  const lc = document.getElementById('layer-chips');
+  lc.innerHTML = '';
+  MODULES_DATA.layers.forEach(l => {
+    const active = state.activeLayers.has(l.id);
+    const el = document.createElement('div');
+    el.className = 'layer-chip' + (active ? ' active' : '');
+    el.innerHTML = `<span class="ldot" style="background:${l.color}"></span>${l.label}`;
+    el.onclick = () => {
+      if(state.activeLayers.has(l.id)) state.activeLayers.delete(l.id);
+      else state.activeLayers.add(l.id);
+      buildSidebar(); renderCurrentView();
+    };
+    lc.appendChild(el);
+  });
+}
+
+// ────────────────────────────────────────────────────
+// ARCHITECTURE VIEW
+// ────────────────────────────────────────────────────
+function renderArch(){
+  const container = document.getElementById('view-arch');
+  container.innerHTML = '';
+  const filtered = new Set(filteredModules().map(m => m.id));
+  const upstream = state.selectedId ? getDepChain(state.selectedId) : null;
+  const downstream = state.selectedId ? getDownstream(state.selectedId) : null;
+
+  MODULES_DATA.layers.forEach((layer, li) => {
+    const layerMods = MODULES_DATA.modules.filter(m => m.layer === layer.id);
+    if(!state.activeLayers.has(layer.id)) return;
+
+    const sec = document.createElement('div');
+    sec.className = 'arch-section';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'arch-layer-hdr';
+    hdr.innerHTML = `<span class="arch-layer-dot" style="background:${layer.color}"></span>
+                     <span class="arch-layer-name" style="color:${layer.color}">${layer.label}</span>`;
+    sec.appendChild(hdr);
+
+    const mods = document.createElement('div');
+    mods.className = 'arch-modules';
+
+    layerMods.forEach(m => {
+      const inFilter = filtered.has(m.id);
+      const isSelected = state.selectedId === m.id;
+      const isUpstream = upstream && upstream.has(m.id) && m.id !== state.selectedId;
+      const isDownstream = downstream && downstream.has(m.id) && m.id !== state.selectedId;
+
+      const card = document.createElement('div');
+      card.className = 'mod-card' +
+        (isSelected ? ' selected' : '') +
+        (!inFilter && !isSelected ? ' dimmed' : '') +
+        (isUpstream ? ' dep-highlight' : '') +
+        (isDownstream ? ' dep-in' : '');
+      card.style.borderColor = inFilter ? 'rgba(255,255,255,.1)' : '';
+
+      const scoreVal = m[state.colorBy];
+      const barColor = scoreColor(scoreVal);
+
+      card.innerHTML = `
+        <div class="mod-name">${m.name}</div>
+        <div class="mod-score-bar" style="background:${barColor};width:${scoreVal*20}%"></div>
+        <div style="font-size:9px;color:var(--text2);margin-bottom:3px;letter-spacing:.04em;">${DIMS.find(d=>d.id===state.colorBy)?.label || ''} · ${scoreVal}/5</div>
+        <div class="mod-badges">
+          ${m.mod_opportunity ? '<span class="badge badge-mod">✦ MOD</span>' : ''}
+          <span class="badge badge-effort">ROI ${roiScore(m)}</span>
+          <span class="badge badge-effort effort-${m.mod_effort}" style="background:none;padding:0;border:none;">${m.mod_effort}</span>
+        </div>`;
+      card.onclick = () => selectModule(m.id);
+      mods.appendChild(card);
+    });
+
+    sec.appendChild(mods);
+    container.appendChild(sec);
+
+    if(li < MODULES_DATA.layers.length - 1){
+      const sep = document.createElement('div');
+      sep.className = 'sep-arrow';
+      sep.textContent = '· · ·';
+      container.appendChild(sep);
+    }
+  });
+}
+
+// ────────────────────────────────────────────────────
+// DEPENDENCY GRAPH
+// ────────────────────────────────────────────────────
+function renderDep(){
+  const container = document.getElementById('view-dep');
+  container.innerHTML = '<svg id="dep-svg"></svg><div class="dep-instructions">Click a node to highlight its dependency chain</div>';
+
+  const svg = d3.select('#dep-svg');
+  const W = container.clientWidth, H = container.clientHeight;
+  svg.attr('viewBox', `0 0 ${W} ${H}`);
+
+  const filtered = filteredModules();
+  const filteredIds = new Set(filtered.map(m => m.id));
+
+  const nodes = MODULES_DATA.modules.map(m => ({
+    id: m.id, name: m.name, layer: m.layer,
+    score: m[state.colorBy], roi: parseFloat(roiScore(m)),
+    filtered: filteredIds.has(m.id)
+  }));
+
+  const links = [];
+  MODULES_DATA.modules.forEach(m => {
+    m.depends_on.forEach(dep => {
+      if(MODULES_DATA.modules.find(x => x.id === dep)){
+        links.push({ source: dep, target: m.id });
+      }
+    });
+  });
+
+  const sim = d3.forceSimulation(nodes)
+    .force('link', d3.forceLink(links).id(d => d.id).distance(90).strength(0.6))
+    .force('charge', d3.forceManyBody().strength(-220))
+    .force('center', d3.forceCenter(W/2, H/2))
+    .force('collision', d3.forceCollide(24));
+
+  const defs = svg.append('defs');
+  defs.append('marker').attr('id','arr-out')
+    .attr('viewBox','0 0 10 6').attr('refX',8).attr('refY',3)
+    .attr('markerWidth',6).attr('markerHeight',4).attr('orient','auto')
+    .append('path').attr('d','M0 0L10 3L0 6Z').attr('fill','rgba(245,158,11,.7)');
+  defs.append('marker').attr('id','arr-in')
+    .attr('viewBox','0 0 10 6').attr('refX',8).attr('refY',3)
+    .attr('markerWidth',6).attr('markerHeight',4).attr('orient','auto')
+    .append('path').attr('d','M0 0L10 3L0 6Z').attr('fill','rgba(74,222,128,.7)');
+  defs.append('marker').attr('id','arr')
+    .attr('viewBox','0 0 10 6').attr('refX',8).attr('refY',3)
+    .attr('markerWidth',5).attr('markerHeight',3).attr('orient','auto')
+    .append('path').attr('d','M0 0L10 3L0 6Z').attr('fill','rgba(255,255,255,.15)');
+
+  const link = svg.append('g').selectAll('line').data(links).enter().append('line')
+    .attr('class','dep-link').attr('marker-end','url(#arr)');
+
+  const node = svg.append('g').selectAll('g').data(nodes).enter().append('g')
+    .attr('class','dep-node')
+    .call(d3.drag()
+      .on('start', (e,d) => { if(!e.active) sim.alphaTarget(.3).restart(); d.fx=d.x; d.fy=d.y; })
+      .on('drag',  (e,d) => { d.fx=e.x; d.fy=e.y; })
+      .on('end',   (e,d) => { if(!e.active) sim.alphaTarget(0); d.fx=null; d.fy=null; })
+    )
+    .on('click', (e,d) => { selectModule(d.id); highlightDeps(d.id, link, node); e.stopPropagation(); });
+
+  node.append('circle')
+    .attr('r', d => d.filtered ? 14 : 9)
+    .attr('fill', d => {
+      const col = scoreColor(d.score);
+      return d.filtered ? col : 'rgba(255,255,255,.05)';
+    })
+    .attr('stroke', d => getLayerColor(d.layer))
+    .attr('stroke-width', 1.5)
+    .attr('opacity', d => d.filtered ? 1 : 0.35);
+
+  node.append('text')
+    .attr('dy', 24).attr('text-anchor','middle')
+    .attr('opacity', d => d.filtered ? 1 : 0.35)
+    .text(d => d.name.length > 16 ? d.name.slice(0,14)+'…' : d.name);
+
+  svg.on('click', () => {
+    selectModule(null);
+    link.attr('class','dep-link').attr('marker-end','url(#arr)');
+  });
+
+  sim.on('tick', () => {
+    link
+      .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+      .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+    node.attr('transform', d => `translate(${d.x},${d.y})`);
+  });
+}
+
+function highlightDeps(id, link, node){
+  const upstream = getDepChain(id);
+  const downstream = getDownstream(id);
+
+  link.attr('class', d => {
+    if(d.target.id === id || (upstream.has(d.source.id) && upstream.has(d.target.id)))
+      return 'dep-link highlight-out';
+    if(d.source.id === id || (downstream.has(d.source.id) && downstream.has(d.target.id)))
+      return 'dep-link highlight-in';
+    return 'dep-link';
+  }).attr('marker-end', d => {
+    if(upstream.has(d.source.id) && upstream.has(d.target.id)) return 'url(#arr-out)';
+    if(downstream.has(d.source.id)) return 'url(#arr-in)';
+    return 'url(#arr)';
+  });
+}
+
+// ────────────────────────────────────────────────────
+// PRIORITY MATRIX
+// ────────────────────────────────────────────────────
+function renderMatrix(){
+  const container = document.getElementById('view-matrix');
+  container.innerHTML = '<svg id="matrix-svg"></svg>';
+  const svg = d3.select('#matrix-svg');
+  const W = container.clientWidth, H = container.clientHeight;
+  const M = { top:40, right:60, bottom:50, left:60 };
+  const iW = W - M.left - M.right, iH = H - M.top - M.bottom;
+
+  svg.attr('viewBox', `0 0 ${W} ${H}`);
+
+  const filtered = filteredModules();
+
+  const xScale = d3.scaleLinear().domain([0.8,5.2]).range([0,iW]);
+  const yScale = d3.scaleLinear().domain([0.8,5.2]).range([iH,0]);
+  const rScale = d3.scaleSqrt().domain([1,5]).range([6,18]);
+
+  const g = svg.append('g').attr('transform',`translate(${M.left},${M.top})`);
+
+  // Quadrant shading
+  const midX = xScale(3), midY = yScale(3);
+  const quads = [
+    { x:0,     y:0,     w:midX,    h:midY,    label:'Low risk\nlow reward',   col:'rgba(74,222,128,.03)'  },
+    { x:midX,  y:0,     w:iW-midX, h:midY,    label:'High ROI\nfocus here',   col:'rgba(34,211,238,.06)'  },
+    { x:0,     y:midY,  w:midX,    h:iH-midY, label:'Easy but\nlow value',    col:'rgba(255,255,255,.02)' },
+    { x:midX,  y:midY,  w:iW-midX, h:iH-midY, label:'High value\nhigh effort', col:'rgba(248,113,113,.03)' },
+  ];
+  quads.forEach(q => {
+    g.append('rect').attr('x',q.x).attr('y',q.y).attr('width',q.w).attr('height',q.h)
+      .attr('fill',q.col);
+    q.label.split('\n').forEach((line,i) => {
+      g.append('text').attr('class','quadrant-label')
+        .attr('x',q.x+q.w/2).attr('y',q.y+q.h/2+(i-0.5)*14)
+        .attr('text-anchor','middle').text(line);
+    });
+  });
+
+  // Grid lines
+  g.append('line').attr('x1',midX).attr('y1',0).attr('x2',midX).attr('y2',iH)
+    .attr('stroke','rgba(255,255,255,.08)').attr('stroke-dasharray','4 4');
+  g.append('line').attr('x1',0).attr('y1',midY).attr('x2',iW).attr('y2',midY)
+    .attr('stroke','rgba(255,255,255,.08)').attr('stroke-dasharray','4 4');
+
+  // Axes
+  const xAxis = d3.axisBottom(xScale).ticks(5).tickFormat(d=>`${d}`);
+  const yAxis = d3.axisLeft(yScale).ticks(5);
+  g.append('g').attr('class','matrix-axis').attr('transform',`translate(0,${iH})`).call(xAxis);
+  g.append('g').attr('class','matrix-axis').call(yAxis);
+
+  g.append('text').attr('class','matrix-axis').attr('text-anchor','middle')
+    .attr('x',iW/2).attr('y',iH+36).text('← Simpler to modernise    Harder to modernise →')
+    .style('font-size','10px').style('fill','var(--text2)').style('font-family','var(--font)');
+  g.append('text').attr('class','matrix-axis').attr('text-anchor','middle')
+    .attr('transform',`translate(-42,${iH/2}) rotate(-90)`)
+    .text('Revenue impact').style('font-size','10px').style('fill','var(--text2)').style('font-family','var(--font)');
+
+  // Bubbles (all modules, filtered ones opaque)
+  const allMods = MODULES_DATA.modules.filter(m => state.activeLayers.has(m.layer));
+  const filteredSet = new Set(filtered.map(m=>m.id));
+
+  allMods.forEach(m => {
+    const inFilter = filteredSet.has(m.id);
+    const r = rScale(m[state.colorBy]);
+    const cx = xScale(m.mod_complexity), cy = yScale(m.revenue_impact);
+    const col = scoreColor(m[state.colorBy]);
+    const layer = getLayerById(m.layer);
+
+    g.append('circle')
+      .attr('class','matrix-bubble')
+      .attr('cx',cx).attr('cy',cy).attr('r',r)
+      .attr('fill', inFilter ? col : 'rgba(255,255,255,.04)')
+      .attr('stroke', inFilter ? layer.color : 'rgba(255,255,255,.08)')
+      .attr('stroke-width', state.selectedId===m.id ? 2 : 1)
+      .attr('opacity', inFilter ? (state.selectedId===m.id?1:.75) : .25)
+      .on('click', () => selectModule(m.id))
+      .append('title').text(`${m.name}\nROI: ${roiScore(m)}  AI win: ${aiWinScore(m)}`);
+
+    if(inFilter && r > 10){
+      g.append('text').attr('class','matrix-label')
+        .attr('x',cx).attr('y',cy+1).attr('text-anchor','middle').attr('dominant-baseline','central')
+        .attr('pointer-events','none').attr('opacity',.8)
+        .text(m.name.split(' ')[0].slice(0,6));
+    }
+  });
+
+  // Legend for bubble size
+  const dim = DIMS.find(d=>d.id===state.colorBy);
+  svg.append('text').attr('x',W-10).attr('y',16).attr('text-anchor','end')
+    .style('font-size','9px').style('fill','var(--text2)').style('font-family','var(--font)')
+    .text(`Bubble colour = ${dim?.label || state.colorBy} score`);
+}
+
+// ────────────────────────────────────────────────────
+// DETAIL PANEL
+// ────────────────────────────────────────────────────
+function selectModule(id){
+  state.selectedId = id;
+  renderCurrentView();
+  renderDetail();
+}
+
+function renderDetail(){
+  const panel = document.getElementById('detail-panel');
+  const inner = document.getElementById('detail-inner');
+  if(!state.selectedId){ panel.classList.remove('open'); return; }
+  panel.classList.add('open');
+
+  const m = getModById(state.selectedId);
+  if(!m) return;
+  const layer = getLayerById(m.layer);
+
+  // Dependencies
+  const upstreamMods = m.depends_on.map(getModById).filter(Boolean);
+  const downstreamMods = MODULES_DATA.modules.filter(x => x.depends_on.includes(m.id));
+
+  inner.innerHTML = `
+    <button class="dp-close" onclick="selectModule(null)">✕</button>
+    <div class="dp-layer" style="color:${layer.color}">${layer.label}</div>
+    <div class="dp-name">${m.name}</div>
+    ${m.mod_opportunity ? '<span class="tag-mod">✦ MODERNISATION OPPORTUNITY</span>' : ''}
+    <span class="effort-pill effort-${m.mod_effort}">${m.mod_effort} effort</span>
+    <div class="dp-desc">${m.desc}</div>
+
+    <div class="dp-roi">
+      <div class="roi-card"><div class="roi-val">${roiScore(m)}</div><div class="roi-label">ROI score</div></div>
+      <div class="roi-card"><div class="roi-val" style="color:var(--purple)">${aiWinScore(m)}</div><div class="roi-label">AI win score</div></div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-sec-title">Dimension scores</div>
+      ${DIMS.map(d => `
+        <div class="score-row">
+          <span class="score-name">${d.label}</span>
+          <div class="score-track"><div class="score-fill" style="width:${m[d.id]*20}%;background:${scoreColor(m[d.id])}"></div></div>
+          <span class="score-num">${m[d.id]}</span>
+        </div>`).join('')}
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-sec-title">Business value</div>
+      <div class="dp-text">${m.biz}</div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-sec-title">Technical detail</div>
+      <div class="dp-text">${m.tech}</div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-sec-title">Modernisation approach</div>
+      <div class="dp-text">${m.mod_approach}</div>
+    </div>
+
+    <div class="dp-section">
+      <div class="dp-sec-title">AI SDLC assessment</div>
+      <div class="dp-text ${m.ai_sdlc >= 4 ? 'ai-score-high' : m.ai_sdlc <= 2 ? 'ai-score-low' : ''}">${m.ai_sdlc_reasoning}</div>
+    </div>
+
+    ${upstreamMods.length ? `
+    <div class="dp-section">
+      <div class="dp-sec-title">Depends on (upstream)</div>
+      <div class="dep-list">${upstreamMods.map(dep => `
+        <div class="dep-item" onclick="selectModule('${dep.id}')">
+          <span class="di-dot" style="background:${getLayerColor(dep.layer)}"></span>
+          ${dep.name}
+          <span class="di-dir">upstream ↑</span>
+        </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    ${downstreamMods.length ? `
+    <div class="dp-section">
+      <div class="dp-sec-title">Consumed by (downstream)</div>
+      <div class="dep-list">${downstreamMods.map(dep => `
+        <div class="dep-item" onclick="selectModule('${dep.id}')">
+          <span class="di-dot" style="background:${getLayerColor(dep.layer)}"></span>
+          ${dep.name}
+          <span class="di-dir">downstream ↓</span>
+        </div>`).join('')}
+      </div>
+    </div>` : ''}
+
+    <div class="dp-actions">
+      <div style="font-size:9px;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;">Explore in AI</div>
+      <button class="dp-btn" onclick="sendToChat('modernisation', '${m.id}')">Modernisation deep dive ↗</button>
+      <button class="dp-btn" onclick="sendToChat('dependencies', '${m.id}')">Map all dependencies ↗</button>
+      <button class="dp-btn" onclick="sendToChat('aiplan', '${m.id}')">AI SDLC implementation plan ↗</button>
+    </div>
+  `;
+}
+
+function sendToChat(type, id){
+  const m = getModById(id);
+  const msgs = {
+    modernisation: `Create a detailed modernisation plan for the Lido "${m.name}" module. Include: phased delivery with very small increments, team size estimate, key technical risks, success metrics, and estimated timeline. Context: ${m.mod_approach}`,
+    dependencies: `Analyse the dependency chain for Lido "${m.name}". Which modules should be modernised first to unlock "${m.name}"? What is the recommended sequence of work?`,
+    aiplan: `Write a concrete AI SDLC implementation plan for the Lido "${m.name}" module. Include: which AI tools to use (GitHub Copilot, Claude, automated testing), what workflows to change, expected speed improvements, and how to introduce it safely to the team. Context: ${m.ai_sdlc_reasoning}`,
+  };
+  // If embedded in Claude, use sendPrompt; otherwise open clipboard
+  if(typeof sendPrompt === 'function') sendPrompt(msgs[type]);
+  else { navigator.clipboard?.writeText(msgs[type]); alert('Prompt copied to clipboard!'); }
+}
+
+// ────────────────────────────────────────────────────
+// PRESETS
+// ────────────────────────────────────────────────────
+const PRESETS = {
+  roi: { revenue_impact:4, ai_sdlc:1, mod_complexity:1, incrementality:4, regulation:1, customer_impact:1 },
+  aiwin: { revenue_impact:1, ai_sdlc:4, mod_complexity:1, incrementality:4, regulation:1, customer_impact:1 },
+  lowrisk: { revenue_impact:1, ai_sdlc:1, mod_complexity:1, incrementality:1, regulation:1, customer_impact:1, _cust_max:2 },
+  regulated: { revenue_impact:1, ai_sdlc:1, mod_complexity:1, incrementality:1, regulation:4, customer_impact:1 },
+};
+
+const PRESET_COLORS = { roi:'revenue_impact', aiwin:'ai_sdlc', regulated:'regulation' };
+
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.onclick = () => {
+    const p = btn.dataset.preset;
+    document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('active'));
+    if(!p){ // clear
+      Object.keys(state.filters).forEach(k=>state.filters[k]=1);
+      state.preset = null;
+    } else {
+      btn.classList.add('active');
+      state.preset = p;
+      const pf = PRESETS[p];
+      Object.keys(state.filters).forEach(k=>state.filters[k]=pf[k]||1);
+      if(PRESET_COLORS[p]) state.colorBy = PRESET_COLORS[p];
+    }
+    buildSidebar();
+    renderCurrentView();
+  };
+});
+
+// Special filter for lowrisk (max customer_impact = 2)
+const origFiltered = filteredModules;
+
+// ────────────────────────────────────────────────────
+// VIEW ROUTING
+// ────────────────────────────────────────────────────
+function renderCurrentView(){
+  if(state.view === 'arch') renderArch();
+  else if(state.view === 'dep') renderDep();
+  else if(state.view === 'matrix') renderMatrix();
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    state.view = btn.dataset.view;
+    document.querySelectorAll('[id^="view-"]').forEach(v=>v.style.display='none');
+    document.getElementById('view-'+state.view).style.display = 'block';
+    renderCurrentView();
+  };
+});
+
+// ────────────────────────────────────────────────────
+// INIT
+// ────────────────────────────────────────────────────
+buildSidebar();
+renderArch();
+</script>
+</body>
+</html>
