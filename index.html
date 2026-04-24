@@ -464,7 +464,7 @@ function selectModule(id){
     <div class="dp-sec-title">Modernisation approach</div><div class="dp-text">${m.mod_approach}</div>
     <div class="dp-sec-title">AI SDLC assessment</div><div class="dp-text" style="color:${m.ai_sdlc>=4?'var(--cyan)':m.ai_sdlc<=2?'var(--text2)':'var(--text1)'}">${m.ai_sdlc_reasoning}</div>
     ${upMods.length?`<div class="dp-sec-title">Depends on</div><div class="dep-list">${upMods.map(d=>`<div class="dep-item" onclick="selectModule('${d.id}')"><span class="di-dot" style="background:${getLayerColor(d.layer)}"></span>${d.name}<span class="di-dir">↑</span></div>`).join('')}</div>`:''}
-    ${dnMods.length?`<div class="dp-sec-title">Consumed by</div><div class="dep-list">${dnMods.map(d=>`<div class="dep-item" onclick="selectModule('${d.id}')"><span class="di-dot" style="background:${getLayerColor(d.layer)}"></span>${d.name}<span class="di-dir">↓</span></div>`).join('')}</div>`:''}\`;
+    ${dnMods.length?`<div class="dp-sec-title">Consumed by</div><div class="dep-list">${dnMods.map(d=>`<div class="dep-item" onclick="selectModule('${d.id}')"><span class="di-dot" style="background:${getLayerColor(d.layer)}"></span>${d.name}<span class="di-dir">↓</span></div>`).join('')}</div>`:''}`;
 }
 
 function sendToChat(type,id){
