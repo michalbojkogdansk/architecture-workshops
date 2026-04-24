@@ -455,20 +455,15 @@ function selectModule(id){
       <div class="roi-card"><div class="roi-val">${roiNorm(m)}</div><div class="roi-label">ROI score</div></div>
       <div class="roi-card"><div class="roi-val" style="color:var(--purple)">${aiWinNorm(m)}</div><div class="roi-label">AI win score</div></div>
     </div>
-    <div style="font-size:10px;color:var(--text2);line-height:1.8;margin-bottom:14px;font-family:var(--sans);">
-      <span style="color:var(--amber)">✦ ROI</span> = (revenue × incrementality) ÷ complexity — value for effort, 0–5.<br>
-      <span style="color:var(--purple)">★ AI Win</span> = (AI SDLC × incrementality) ÷ complexity — how much AI tooling helps here, 0–5.<br>
-      <span style="color:#2dd4bf">⊙ Training ground</span> = low regulation, low customer risk, high AI fit — safe to experiment.<br>
-      <span style="color:#4ade80;font-weight:600;">▶ Start here</span> = all three criteria met — best entry point for the programme.
-    </div>
     <div class="dp-sec-title">Scores</div>
     ${DIMS.map(d=>`<div class="score-row"><span class="score-name">${d.label}</span><div class="score-track"><div class="score-fill" style="width:${m[d.id]*20}%;background:${d.color}"></div></div><span class="score-num">${m[d.id]}</span></div>`).join('')}
-    <div class="dp-sec-title">Technical</div><div class="dp-text">${m.tech}</div>
-    ${(isStart||isTraining||roiN>=2.0||aiN>=2.0)?`<div class="dp-sec-title" style="margin-top:12px;">Why these indicators</div><div class="dp-text">${[
+    <div class="dp-sec-title">Technical</div>
+    <div class="dp-text">${m.tech}</div>
+    ${(isStart||isTraining||roiN>=2.0||aiN>=2.0)?`<div class="dp-sec-title" style="margin-top:14px;">Why these indicators</div><div class="dp-text">${[
       isStart?'<span style="color:#4ade80;font-weight:500;">▶ Start here</span> — highest combined ROI and AI Win in the portfolio with low regulatory and customer risk. The natural entry point for the modernisation programme.':'',
       isTraining&&!isStart?'<span style="color:#2dd4bf;font-weight:500;">⊙ Training ground</span> — high AI SDLC fit with low regulation and low customer exposure. Safe to build AI SDLC skills without risk to production operations.':'',
       isStart?'<span style="color:#2dd4bf;font-weight:500;">⊙ Training ground</span> — also qualifies: safe, highly incremental, well suited to AI tooling experimentation.':'',
-      roiN>=2.0?`<span style="color:var(--amber);font-weight:500;">✦ High ROI</span> — score ${roiN}/5, driven by revenue impact ${m.revenue_impact}/5 × incrementality ${m.incrementality}/5 ÷ complexity ${m.mod_complexity}/5.`:'',
+      roiN>=2.0?`<span style="color:var(--amber);font-weight:500;">✦ High ROI</span> — score ${roiN}/5 from revenue impact ${m.revenue_impact}/5 × incrementality ${m.incrementality}/5 ÷ complexity ${m.mod_complexity}/5.`:'',
       aiN>=2.0?`<span style="color:var(--purple);font-weight:500;">★ High AI Win</span> — ${m.ai_sdlc_reasoning}`:'',
     ].filter(Boolean).join('<br><br>')}</div>`:''}
     ${upMods.length?`<div class="dp-sec-title">Depends on</div><div class="dep-list">${upMods.map(d=>`<div class="dep-item" onclick="selectModule('${d.id}')"><span class="di-dot" style="background:${getLayerColor(d.layer)}"></span>${d.name}<span class="di-dir">↑</span></div>`).join('')}</div>`:''}
