@@ -141,7 +141,7 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
 </header>
 
 <div class="layout">
-  <div class="sidebar-wrap open" id="sidebar-wrap">
+  <div class="sidebar-wrap closed" id="sidebar-wrap">
     <div class="sidebar">
       <div class="sb-section">
         <div class="sb-title">Colour by</div>
@@ -157,14 +157,14 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       </div>
       <div class="sb-section">
         <div style="font-size:10px;color:var(--text2);line-height:2;">
-        <span style="color:var(--cyan)">─</span> Bar = selected dimension score<br>
-        <span style="color:#4ade80;font-weight:600;">▶</span> Start here — high ROI + AI Win + safe to train on<br>
-        <span style="color:var(--amber)">✦</span> High ROI score (≥ 2.0 / 5)<br>
-        <span style="color:var(--purple)">★</span> High AI Win score (≥ 2.0 / 5)<br>
-        <span style="color:#2dd4bf">⊙</span> Training ground — low risk, high AI SDLC fit<br>
-        <span style="color:var(--amber)">─</span> Amber border = upstream dep<br>
-        <span style="color:var(--green)">─</span> Green border = downstream dep
-      </div>
+          <span style="color:var(--cyan)">─</span> Bar = selected dimension score<br>
+          <span style="color:#4ade80;font-weight:600;">▶</span> Start here — high ROI + AI Win + safe to train on<br>
+          <span style="color:var(--amber)">✦</span> High ROI score (≥ 2.0 / 5)<br>
+          <span style="color:var(--purple)">★</span> High AI Win score (≥ 2.0 / 5)<br>
+          <span style="color:#2dd4bf">⊙</span> Training ground — low risk, high AI SDLC fit<br>
+          <span style="color:var(--amber)">─</span> Amber border = upstream dep<br>
+          <span style="color:var(--green)">─</span> Green border = downstream dep
+        </div>
       </div>
     </div>
   </div>
@@ -498,9 +498,6 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 function renderCurrentView(){if(state.view==='arch')renderArch();else if(state.view==='dep')renderDep();else renderMatrix();}
 
 buildSidebar();
-// Apply initial closed states
-document.getElementById('sidebar-wrap').className='sidebar-wrap closed';
-document.getElementById('sb-toggle').textContent='›';
 renderArch();
 </script>
 </body>
