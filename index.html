@@ -38,7 +38,7 @@ header{height:46px;border-bottom:1px solid var(--border);display:flex;align-item
 .main-wrap{flex:1;display:flex;overflow:hidden;position:relative;}
 .sb-toggle{position:absolute;left:0;top:50%;transform:translateY(-50%);width:16px;height:34px;background:var(--bg1);border:1px solid var(--border2);border-left:none;border-radius:0 4px 4px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:10px;z-index:10;transition:.15s;}
 .sb-toggle:hover{color:var(--cyan);border-color:var(--cyan);}
-.dp-toggle{position:absolute;right:0;top:50%;transform:translateY(-50%);width:16px;height:34px;background:var(--bg1);border:1px solid var(--border2);border-right:none;border-radius:4px 0 0 4px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:10px;z-index:10;transition:.15s;}
+.dp-toggle{position:absolute;left:-16px;top:50%;transform:translateY(-50%);width:16px;height:34px;background:var(--bg1);border:1px solid var(--border2);border-right:none;border-radius:4px 0 0 4px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:10px;z-index:10;transition:.15s;}
 .dp-toggle:hover{color:var(--cyan);border-color:var(--cyan);}
 .main{flex:1;overflow:hidden;}
 .detail-panel{width:0;border-left:1px solid var(--border);overflow-y:auto;background:var(--bg1);flex-shrink:0;transition:width .2s;}
@@ -156,10 +156,12 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
         <div class="layer-chips" id="layer-chips"></div>
       </div>
       <div class="sb-section">
-        <div style="font-size:10px;color:var(--text2);line-height:1.9;">
+        <div style="font-size:10px;color:var(--text2);line-height:2;">
         <span style="color:var(--cyan)">─</span> Bar = selected dimension score<br>
+        <span style="color:#4ade80;font-weight:600;">▶</span> Start here — high ROI + AI Win + safe to train on<br>
         <span style="color:var(--amber)">✦</span> High ROI score (≥ 2.0 / 5)<br>
         <span style="color:var(--purple)">★</span> High AI Win score (≥ 2.0 / 5)<br>
+        <span style="color:#2dd4bf">⊙</span> Training ground — low risk, high AI SDLC fit<br>
         <span style="color:var(--amber)">─</span> Amber border = upstream dep<br>
         <span style="color:var(--green)">─</span> Green border = downstream dep
       </div>
@@ -274,9 +276,13 @@ function makeCard(m,filtSet,up,dn){
   card.className='mod-card'+(isSel?' selected':'')+(!inF&&!isSel?' dimmed':'')+(isUp?' dep-up':'')+(isDn?' dep-down':'');
   const roiN = Math.min(5, roiScore(m)/5);
   const aiN  = Math.min(5, aiWinScore(m)/5);
-  const roiStar = roiN >= 2.0 ? `<span style="color:var(--amber);font-size:9px;line-height:1;" title="High ROI">✦</span>` : '';
-  const aiStar  = aiN  >= 2.0 ? `<span style="color:var(--purple);font-size:9px;line-height:1;" title="High AI Win">★</span>` : '';
-  const stars = (roiStar || aiStar) ? `<span style="display:inline-flex;gap:3px;margin-left:5px;vertical-align:middle;">${roiStar}${aiStar}</span>` : '';
+  const isTraining = m.ai_sdlc >= 4 && m.incrementality >= 4 && m.regulation <= 3 && m.customer_impact <= 3;
+  const isStart    = roiN >= 2.0 && aiN >= 2.0 && isTraining;
+  const roiStar  = roiN >= 2.0  ? `<span style="color:var(--amber);font-size:9px;line-height:1;" title="High ROI">✦</span>` : '';
+  const aiStar   = aiN  >= 2.0  ? `<span style="color:var(--purple);font-size:9px;line-height:1;" title="High AI Win">★</span>` : '';
+  const trainStar= isTraining   ? `<span style="color:#2dd4bf;font-size:9px;line-height:1;" title="Training ground — low risk, great for learning AI SDLC">⊙</span>` : '';
+  const startStar= isStart      ? `<span style="color:#4ade80;font-size:10px;line-height:1;font-weight:600;" title="Start here — best entry point for the modernisation programme">▶</span>` : '';
+  const stars = (roiStar||aiStar||trainStar||startStar) ? `<span style="display:inline-flex;gap:3px;margin-left:5px;vertical-align:middle;">${startStar}${roiStar}${aiStar}${trainStar}</span>` : '';
   const pct=(m[state.colorBy]/5)*100;
   const dim=DIMS.find(d=>d.id===state.colorBy);
   card.innerHTML=`<div class="mod-name">${m.name}${stars}</div><div class="roi-track"><div class="roi-fill" style="width:${pct}%;background:${dim?.color||'var(--cyan)'}"></div></div>`;
@@ -403,9 +409,11 @@ function selectModule(id){
       <div class="roi-card"><div class="roi-val">${roiNorm(m)}</div><div class="roi-label">ROI score</div></div>
       <div class="roi-card"><div class="roi-val" style="color:var(--purple)">${aiWinNorm(m)}</div><div class="roi-label">AI win score</div></div>
     </div>
-    <div style="font-size:10px;color:var(--text2);line-height:1.7;margin-bottom:14px;font-family:var(--sans);">
-      <span style="color:var(--amber)">✦ ROI</span> = (revenue × incrementality) ÷ complexity — how much value for how much effort, scaled 0–5.<br>
-      <span style="color:var(--purple)">★ AI Win</span> = (AI SDLC × incrementality) ÷ complexity — how much AI tooling accelerates delivery here, scaled 0–5.
+    <div style="font-size:10px;color:var(--text2);line-height:1.8;margin-bottom:14px;font-family:var(--sans);">
+      <span style="color:var(--amber)">✦ ROI</span> = (revenue × incrementality) ÷ complexity — value for effort, 0–5.<br>
+      <span style="color:var(--purple)">★ AI Win</span> = (AI SDLC × incrementality) ÷ complexity — how much AI tooling helps here, 0–5.<br>
+      <span style="color:#2dd4bf">⊙ Training ground</span> = low regulation, low customer risk, high AI fit — safe to experiment.<br>
+      <span style="color:#4ade80;font-weight:600;">▶ Start here</span> = all three criteria met — best entry point for the programme.
     </div>
     <div class="dp-sec-title">Scores</div>
     ${DIMS.map(d=>`<div class="score-row"><span class="score-name">${d.label}</span><div class="score-track"><div class="score-fill" style="width:${m[d.id]*20}%;background:${d.color}"></div></div><span class="score-num">${m[d.id]}</span></div>`).join('')}
