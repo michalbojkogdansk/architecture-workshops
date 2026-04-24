@@ -232,8 +232,10 @@ let state = {
 const getModById   = id => MODULES_DATA.modules.find(m=>m.id===id);
 const getLayerById = id => MODULES_DATA.layers.find(l=>l.id===id);
 const getLayerColor= id => getLayerById(id)?.color||'#6b7280';
-const roiScore     = m  => (m.revenue_impact*m.incrementality)/m.mod_complexity;
-const aiWinScore   = m  => (m.ai_sdlc*m.incrementality)/m.mod_complexity;
+const roiScore    = m => (m.revenue_impact*m.incrementality)/m.mod_complexity;
+const aiWinScore  = m => (m.ai_sdlc*m.incrementality)/m.mod_complexity;
+const roiNorm     = m => Math.min(5, roiScore(m)/5).toFixed(1);
+const aiWinNorm   = m => Math.min(5, aiWinScore(m)/5).toFixed(1);
 const scoreColor   = v  => ['','#f87171','#fb923c','#f59e0b','#4ade80','#22d3ee'][v]||'#6b7280';
 
 function filteredModules() {
@@ -374,7 +376,7 @@ function renderMatrix(){
   const filtSet=new Set(filteredModules().map(m=>m.id));
   MODULES_DATA.modules.filter(m=>state.activeLayers.has(m.layer)).forEach(m=>{
     const inf=filtSet.has(m.id);
-    g.append('circle').attr('cx',xScale(m.mod_complexity)).attr('cy',yScale(m.revenue_impact)).attr('r',rScale(m[state.colorBy])).attr('fill',inf?scoreColor(m[state.colorBy]):'rgba(255,255,255,.04)').attr('stroke',getLayerColor(m.layer)).attr('stroke-width',state.selectedId===m.id?2:1).attr('opacity',inf?.75:.2).style('cursor','pointer').on('click',()=>selectModule(m.id)).append('title').text(`${m.name}\nROI: ${roiScore(m).toFixed(1)}`);
+    g.append('circle').attr('cx',xScale(m.mod_complexity)).attr('cy',yScale(m.revenue_impact)).attr('r',rScale(m[state.colorBy])).attr('fill',inf?scoreColor(m[state.colorBy]):'rgba(255,255,255,.04)').attr('stroke',getLayerColor(m.layer)).attr('stroke-width',state.selectedId===m.id?2:1).attr('opacity',inf?.75:.2).style('cursor','pointer').on('click',()=>selectModule(m.id)).append('title').text(`${m.name}\nROI: ${roiNorm(m)}`);
   });
 }
 
@@ -423,11 +425,11 @@ function selectModule(id){
     ${m.mod_opportunity?'<span class="tag-mod">✦ Modernisation opportunity</span>':''}
     <div class="dp-desc">${m.desc}</div>
     <div class="dp-roi-row">
-      <div class="roi-card"><div class="roi-val">${roiScore(m).toFixed(1)}</div><div class="roi-label">ROI score</div></div>
-      <div class="roi-card"><div class="roi-val" style="color:var(--purple)">${aiWinScore(m).toFixed(1)}</div><div class="roi-label">AI win score</div></div>
+      <div class="roi-card"><div class="roi-val">${roiNorm(m)}</div><div class="roi-label">ROI score</div></div>
+      <div class="roi-card"><div class="roi-val" style="color:var(--purple)">${aiWinNorm(m)}</div><div class="roi-label">AI win score</div></div>
     </div>
     <div class="dp-sec-title">Scores</div>
-    ${DIMS.map(d=>`<div class="score-row"><span class="score-name">${d.label}</span><div class="score-track"><div class="score-fill" style="width:${m[d.id]*20}%;background:${scoreColor(m[d.id])}"></div></div><span class="score-num">${m[d.id]}</span></div>`).join('')}
+    ${DIMS.map(d=>`<div class="score-row"><span class="score-name">${d.label}</span><div class="score-track"><div class="score-fill" style="width:${m[d.id]*20}%;background:${d.color}"></div></div><span class="score-num">${m[d.id]}</span></div>`).join('')}
     <div class="dp-sec-title">Business value</div><div class="dp-text">${m.biz}</div>
     <div class="dp-sec-title">Technical detail</div><div class="dp-text">${m.tech}</div>
     <div class="dp-sec-title">Modernisation approach</div><div class="dp-text">${m.mod_approach}</div>
