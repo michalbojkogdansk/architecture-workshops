@@ -42,6 +42,8 @@ header{height:46px;border-bottom:1px solid var(--border);display:flex;align-item
 .main-wrap{flex:1;display:flex;overflow:hidden;position:relative;}
 .sb-toggle{position:absolute;left:0;top:50%;transform:translateY(-50%);width:16px;height:34px;background:var(--bg1);border:1px solid var(--border2);border-left:none;border-radius:0 4px 4px 0;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:10px;z-index:10;transition:.15s;}
 .sb-toggle:hover{color:var(--cyan);border-color:var(--cyan);}
+.dp-toggle{position:absolute;right:0;top:50%;transform:translateY(-50%);width:16px;height:34px;background:var(--bg1);border:1px solid var(--border2);border-right:none;border-radius:4px 0 0 4px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:10px;z-index:10;transition:.15s;}
+.dp-toggle:hover{color:var(--cyan);border-color:var(--cyan);}
 .main{flex:1;overflow:hidden;}
 .detail-panel{width:0;border-left:1px solid var(--border);overflow-y:auto;background:var(--bg1);flex-shrink:0;transition:width .2s;}
 .detail-panel.open{width:var(--detail);}
@@ -189,8 +191,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:11px;heigh
       <div id="view-dep" style="display:none"></div>
       <div id="view-matrix" style="display:none"></div>
     </main>
-    <div class="detail-panel" id="detail-panel">
-      <div class="dp-inner" id="detail-inner"></div>
+    <div style="position:relative;display:flex;flex-shrink:0;">
+      <div class="dp-toggle" id="dp-toggle" onclick="toggleDetail()" style="display:none">›</div>
+      <div class="detail-panel" id="detail-panel">
+        <div class="dp-inner" id="detail-inner"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -221,7 +226,7 @@ let state = {
   view:'arch', groupMode:'logical', colorBy:'revenue_impact',
   filters:{ revenue_impact:1,ai_sdlc:1,mod_complexity:1,incrementality:1,regulation:1,customer_impact:1 },
   activeLayers: new Set(MODULES_DATA.layers.map(l=>l.id)),
-  selectedId:null, sidebarOpen:true,
+  selectedId:null, sidebarOpen:true, detailOpen:true,
 };
 
 const getModById   = id => MODULES_DATA.modules.find(m=>m.id===id);
@@ -372,20 +377,45 @@ function renderMatrix(){
   });
 }
 
+function toggleDetail() {
+  state.detailOpen = !state.detailOpen;
+  const panel = document.getElementById('detail-panel');
+  const btn   = document.getElementById('dp-toggle');
+  panel.classList.toggle('open', state.detailOpen && !!state.selectedId);
+  btn.textContent = state.detailOpen ? '›' : '‹';
+}
+
 function selectModule(id){
-  state.selectedId=id;
+  // clicking the same element again → deselect everything
+  if (id && id === state.selectedId) {
+    state.selectedId = null;
+    state.detailOpen = true;
+    document.getElementById('detail-panel').classList.remove('open');
+    document.getElementById('dp-toggle').style.display = 'none';
+    renderCurrentView();
+    return;
+  }
+  state.selectedId = id;
   renderCurrentView();
-  const panel=document.getElementById('detail-panel');
-  const inner=document.getElementById('detail-inner');
-  if(!id){panel.classList.remove('open');return;}
-  panel.classList.add('open');
+  const panel  = document.getElementById('detail-panel');
+  const toggle = document.getElementById('dp-toggle');
+  const inner  = document.getElementById('detail-inner');
+  if (!id) {
+    panel.classList.remove('open');
+    toggle.style.display = 'none';
+    state.detailOpen = true;
+    return;
+  }
+  // show toggle button always when something is selected
+  toggle.style.display = 'flex';
+  toggle.textContent = state.detailOpen ? '›' : '‹';
+  panel.classList.toggle('open', state.detailOpen);
   const m=getModById(id);if(!m)return;
   const layer=getLayerById(m.layer);
   const logical=LOGICAL_GROUPS.find(g=>g.layers.includes(m.layer));
   const upMods=m.depends_on.map(getModById).filter(Boolean);
   const dnMods=MODULES_DATA.modules.filter(x=>x.depends_on.includes(m.id));
   inner.innerHTML=`
-    <button class="dp-close" onclick="selectModule(null)">✕</button>
     <div class="dp-layer-tag" style="color:${layer.color}">${layer.label}</div>
     <div class="dp-name">${m.name}</div>
     <div class="dp-group" style="color:${logical?.color}">${logical?.label||''}</div>
